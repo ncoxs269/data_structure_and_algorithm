@@ -1,37 +1,16 @@
 # datastructure-and-algorithm
 
-#### 介绍
+## 介绍
 《算法竞赛进阶指南》笔记，也包括补充的算法知识
 
-#### 软件架构
-软件架构说明
+## 一些解决问题的思路
 
+边思考边写下来，问题思路会更清晰
 
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
-
-
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+- 暴力法：一些问题可以先想个暴力方法，然后怎么去优化
+- 数据结构：尝试使用哈希表、红黑树、堆、union、线段树等数据结构
+- 算法：试试指针、滑动窗口、前缀差分、排序、回溯、分治、动归等算法
+- 分解法：看看能不能把问题分解为几个子问题，例如多路归并（E378）、分治
+- 归纳法：假设原问题的规模小一点的子问题已经解决，再考虑如何解决原问题，参见G17
+- 逆向思维：正向走不通试试逆向，例如从值域反推定义域（二分法转判定）
+- 转化法：把一个问题转化为另一个更简单的问题，或者能不能把多种情况化简为一种情况，参见G16
