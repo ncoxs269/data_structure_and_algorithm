@@ -242,7 +242,7 @@ Twin snowflakes found.
 
 取一固定值 $P$，把字符串看作 $P$ 进制数，并分配一个大于 0 的数值，代表每种字符。一般来说，我们选取一个大于字符集大小（即字符串中可能出现的字符种类的数目）的质数 $P$ 作为 base，再选取一个在字符串长度平方级别左右的质数 $M$ 作为 mod，产生哈希碰撞的概率就会很低。这又叫做 **Rabin-Karp 字符串哈希算法（滚动哈希）**。
 
-一般来说，我们取 $P = 131$ 或 $P = 13331$, 此时 Hash 值产生冲突的概率极低，只要 Hash 值相同，我们就可以认为原字符串是相等的。通常我们取 $M = 2^{64}$, 即直接使用 `unsigned long long` 类型存储这个 Hash 值，在计算时不处理算术溢出问题，产生溢出时相当于自动对 $2^{64}$ 取模，这样可以避免低效的取模运算。
+一般来说，我们取 $P = 131$ 或 $P = 13331$, 此时 Hash 值产生冲突的概率极低，只要 Hash 值相同，我们就可以认为原字符串是相等的。**通常我们取 $M = 2^{64}$, 即直接使用 `unsigned long long` 类型存储这个 Hash 值，在计算时不处理算术溢出问题，产生溢出时相当于自动对 $2^{64}$ 取模，这样可以避免低效的取模运算**。
 
 除了在极特殊构造的数据上，上述 Hash 算法很难产生冲突，一般情况下上述 Hash 算法完全可以出现在题目的标准解答中。我们还可以多取一些恰当的 $P$ 和 $M$ 的值（例如大质数)，多进行几组 Hash 运算，当结果都相同时才认为原字符串相等，就更加难以构造出使这个 Hash 产生错误的数据。
 
@@ -293,6 +293,39 @@ aabbaabb
 Yes
 No
 Yes
+```
+
+## 2.2 习题 53：回文子串的最大长度[^3]
+
+如果一个字符串正着读和倒着读是一样的，则称它是回文的。
+
+给定一个长度为 $N$ 的字符串 $S$，求他的最长回文子串的长度是多少。
+
+- **输入格式**：
+
+1. 输入将包含最多 30 个测试用例，每个测试用例占一行，以最多 1000000 个小写字符的形式给出。
+
+2. 输入以一个以字符串 `END` 开头的行表示输入终止。
+
+- **输出格式**：
+
+1. 对于输入中的每个测试用例，输出测试用例编号和最大回文子串的长度（参考样例格式）。
+
+2. 每个输出占一行。
+
+- **输入样例**：
+
+```
+abcbabcbabcba
+abacacbaaaab
+END
+```
+
+- **输出样例**：
+
+```
+Case 1: 13
+Case 2: 6
 ```
 
 # 题解
@@ -459,7 +492,7 @@ public static class HashStr {
             (hashes[i][r1] - hashes[i][l1-1] * basePow[i][r1 - l1 + 1]) % m
 
             减法那里取模需要改成下面这样，否则负数取模会出错：
-            (hashes[i][r1] - hashes[i][l1-1] * basePow[i][r1 - l1 + 1] + m) % m
+            (hashes[i][r1] - hashes[i][l1-1] * basePow[i][r1 - l1 + 1] % m + m) % m
             */
             long hash1 = hashes[i][r1] - hashes[i][l1-1] * basePow[i][r1 - l1 + 1];
             long hash2 = hashes[i][r2] - hashes[i][l2-1] * basePow[i][r2 - l2 + 1];
@@ -488,7 +521,123 @@ public void findSameRabbit() {
 }
 ```
 
+## 习题 53：回文子串的最大长度
+
+写几个回文串观察它们的性质，我们可以发现回文串分为两类：
+
+1. 奇回文串 $A[1\sim M]$，长度 $M$ 为奇数，并且 $A[1\sim M / 2 +1] = \mathrm{reverse}(A[M/2 +1\sim M] )$, 它的中心点是一个字符。其中 $\mathrm{reverse}(A)$ 表示把字符串 $A$ 倒过来。
+2. 偶回文串 $B[1\sim M]$，长度 $M$ 为偶数，且 $B[1\sim M/2] = \mathrm{reverse}(B[M/2 +1\sim M])$，它的中心点是两个字符之间的夹缝。
+
+于是在本题中，我们可以枚举 $S$ 的回文子串的中心位置 $i=1\sim N$，看从这个中心位置出发向左右两侧最长可以扩展出多长的回文串。也就是说：
+
+1. 求出一个最大的整数 $p$ 使得 $S[i - p \sim i ] = \mathrm{reverse}(S[i\sim i+p])$, 那么以 $i$ 为中心的最长奇回文子串的长度就是 $2 *p +1$。
+2. 求出一个最大的整数 $q$ 使得 $S[i - q\sim i-1] = \mathrm{reverse}(S[i\sim i + q - 1])$, 那么以 $i-1$ 和 $i$ 之间的夹缝为中心的最长偶回文子串的长度就是 $2 *q$。
+
+根据上一道题目，我们己经知道在 $\mathrm{O}(N)$ 预处理前缀 Hash 值后，可以 $\mathrm{O}(1)$ 计算任意子串的 Hash 值。类似地，我们可以倒着做一遍预处理，就可以 $\mathrm{O}(1)$ 计算任意子串倒着读的 Hash 值。于是我们可以对 $p$ 和 $q$ 进行二分答案，用 Hash 值 $\mathrm{O}(1)$ 比较一个正着读的子串和一个倒着读的子串是否相等，从而在 $\mathrm{O}(\log N)$ 时间内求出最大的 $p$ 和 $q$。在枚举过的所有中心位置对应的奇、偶回文子串长度中取 $\max$ 就是整道题目
+的答案，时间复杂度为 $\mathrm{O}(N\log N)$。
+
+有一个名为 Manacher 的算法可以 $\mathrm{O}(N)$ 求解该问题，感兴趣的读者可以自行查阅相关资料。
+
+```java
+public static class HashStr {
+
+    private final long[][] hashes;
+    private final long[][] reverseHashes;
+    private final long[][] basePow;
+
+    public HashStr(char[] s, int[] primes) {
+        final int n = s.length;
+        hashes = new long[primes.length][n+1];
+        reverseHashes = new long[primes.length][n+1];
+        basePow = new long[primes.length][n+1];
+        for (int i = 0; i < primes.length; i++) {
+            int p = primes[i];
+            basePow[i][0] = 1;
+            for (int j = 0; j < n; j++) {
+                hashes[i][j+1] = hashes[i][j] * p + s[j] - 'a';
+                basePow[i][j+1] = basePow[i][j] * p;
+            }
+            // reverseHashes[i][j] 表示 s[j..n) 的反向哈希值
+            for (int j = n - 1; j >= 0; j--) {
+                reverseHashes[i][j] = reverseHashes[i][j+1] * p + s[j] - 'a';
+            }
+        }
+    }
+
+    public int maxPalindromeSize() {
+        // abacacbaaaab
+        final int n = hashes[0].length - 1;
+        int ans = 0;
+        for (int i = 1; i <= n; i++) {
+            // 二分法求出中心点为 i 时，最长的奇回文串长度
+            int lo = 0, hi = Math.min(i - 1, n - i);
+            while (lo < hi) {
+                int mi = (lo + hi + 1) >>> 1;
+                if (isOddPalindrome(i, mi)) {
+                    lo = mi;
+                } else {
+                    hi = mi - 1;
+                }
+            }
+            ans = Math.max(ans, 2 * lo + 1);
+
+            // 二分法求出中心点为 i 时，最长的偶回文串长度
+            lo = 0;
+            hi = Math.min(i - 1, n - i + 1);
+            while (lo < hi) {
+                int mi = (lo + hi + 1) >>> 1;
+                if (isEvenPalindrome(i, mi)) {
+                    lo = mi;
+                } else {
+                    hi = mi - 1;
+                }
+            }
+            ans = Math.max(ans, 2 * lo);
+        }
+
+        return ans;
+    }
+
+    private boolean isOddPalindrome(int center, int p) {
+        for (int i = 0; i < hashes.length; i++) {
+            if (hash(i, center - p, center) != reverseHash(i, center, center + p)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isEvenPalindrome(int center, int q) {
+        for (int i = 0; i < hashes.length; i++) {
+            if (hash(i, center - q, center - 1) != reverseHash(i, center, center + q - 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private long hash(int i, int l, int r) {
+        return hashes[i][r] - hashes[i][l-1] * basePow[i][r - l + 1];
+    }
+
+    private long reverseHash(int i, int l, int r) {
+        return reverseHashes[i][l-1] - reverseHashes[i][r] * basePow[i][r - l + 1];
+    }
+}
+
+public void longestPalindrome() {
+    Scanner in = new Scanner(System.in);
+    int[] primes = {31};
+    int i = 1;
+    for (String s = in.nextLine(); !s.equals("END"); s = in.nextLine()) {
+        HashStr hash = new HashStr(s.toCharArray(), primes);
+        System.out.println("Case " + i++ + ": " + hash.maxPalindromeSize());
+    }
+}
+```
+
 
 
 [^1]: https://www.acwing.com/problem/content/139/
 [^2]: https://www.acwing.com/problem/content/140/
+[^3]: https://www.acwing.com/problem/content/141/
