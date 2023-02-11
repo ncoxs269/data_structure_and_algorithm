@@ -236,7 +236,64 @@ $$
 Twin snowflakes found.
 ```
 
+# 2. 字符串 Hash
 
+下面介绍的字符串 Hash 函数把一个任意长度的字符串映射成一个非负整数，并且其冲突概率几乎为零。
+
+取一固定值 $P$，把字符串看作 $P$ 进制数，并分配一个大于 0 的数值，代表每种字符。一般来说，我们选取一个大于字符集大小（即字符串中可能出现的字符种类的数目）的质数 $P$ 作为 base，再选取一个在字符串长度平方级别左右的质数 $M$ 作为 mod，产生哈希碰撞的概率就会很低。这又叫做 **Rabin-Karp 字符串哈希算法（滚动哈希）**。
+
+一般来说，我们取 $P = 131$ 或 $P = 13331$, 此时 Hash 值产生冲突的概率极低，只要 Hash 值相同，我们就可以认为原字符串是相等的。通常我们取 $M = 2^{64}$, 即直接使用 `unsigned long long` 类型存储这个 Hash 值，在计算时不处理算术溢出问题，产生溢出时相当于自动对 $2^{64}$ 取模，这样可以避免低效的取模运算。
+
+除了在极特殊构造的数据上，上述 Hash 算法很难产生冲突，一般情况下上述 Hash 算法完全可以出现在题目的标准解答中。我们还可以多取一些恰当的 $P$ 和 $M$ 的值（例如大质数)，多进行几组 Hash 运算，当结果都相同时才认为原字符串相等，就更加难以构造出使这个 Hash 产生错误的数据。
+
+对字符串的各种操作，都可以直接对 $P$ 进制数进行算术运算反映到 Hash 值上。
+
+如果我们已知字符串 $S$ 的 Hash 值为 $H(S)$, 那么在 $S$ 后添加一个字符 $c$ 构成的新字符串 $S +c$ 的 Hash 值就是 $H(S +c)=(H(S)* P + value [c]) \mod M$。其中乘 $P$ 就相当于 $P$ 进制下的左移运算，$value[c]$ 是我们为 $c$ 选定的代表数值。
+
+如果我们己知字符串 $S$ 的 Hash 值为 $H(S)$, 字符串 $S + T$ 的 Hash 值为 $H(S +T )$, 那么字符串 $T$ 的 Hash 值 $H(T ) =(H(S+T) - H(S)*P^{len(T)})\mod M$。这就相当于通过 $P$ 进制下在 $S$ 后边补 0 的方式，把 $S$ 左移到与 $S + T$ 的左端对齐，然后二者相减就得到了 $H(T)$。
+
+根据上面两种操作，我们可以通过 $\mathrm{O}(N)$ 的时间预处理字符串所有前缀 Hash 值，并在 $\mathrm{O}(1)$ 的时间内查询它的任意子串的 Hash 值。
+
+## 2.1 习题 52：兔子与兔子[^2]
+
+很久很久以前，森林里住着一群兔子。有一天，兔子们想要研究自己的 DNA 序列。
+
+我们首先选取一个好长好长的 DNA 序列（小兔子是外星生物，DNA 序列可能包含 26 个小写英文字母）。然后我们每次选择两个区间，询问如果用两个区间里的 DNA 序列分别生产出来两只兔子，这两个兔子是否一模一样。
+
+注意两个兔子一模一样只可能是他们的 DNA 序列一模一样。
+
+- **输入格式**：
+
+1. 第一行输入一个 DNA 字符串 $S$。
+2. 第二行一个数字 $m$，表示 $m$ 次询问。
+3. 接下来 $m$ 行，每行四个数字 $l_1,r_1,l_2,r_2$，分别表示此次询问的两个区间，注意字符串的位置从 1 开始编号。
+
+- **输出格式**：
+
+1. 对于每次询问，输出一行表示结果。
+2. 如果两只兔子完全相同输出 `Yes`，否则输出 `No`（注意大小写）。
+
+- **数据范围**：
+
+1. $1≤length(S),m≤1000000$
+
+- **输入样例**：
+
+```
+aabbaabb
+3
+1 3 5 7
+1 3 6 8
+1 2 1 2
+```
+
+- **输出样例**：
+
+```
+Yes
+No
+Yes
+```
 
 # 题解
 
@@ -360,6 +417,78 @@ public void sameSnowflake() {
 }
 ```
 
+## 习题 52：兔子与兔子
+
+使用字符串 Hash 法如下
+
+```java
+public static class HashStr {
+
+    private final long[][] hashes;
+    private final long[][] basePow;
+
+    public HashStr(char[] s, int[] primes) {
+        hashes = new long[primes.length][s.length+1];
+        basePow = new long[primes.length][s.length+1];
+        for (int i = 0; i < primes.length; i++) {
+            int p = primes[i];
+            /*
+            0  c0  c0*p+c1  c0*p^2+c1*p+c2  ...
+            1  p^1 p^2      p^3             ...
+
+            hashes[i] 表示 s[0..i) 的哈希值
+            basePow[i] 表示 p^i
+            */
+            basePow[i][0] = 1;
+            for (int j = 0; j < s.length; j++) {
+                hashes[i][j+1] = hashes[i][j] * p + s[j] - 'a';
+                basePow[i][j+1] = basePow[i][j] * p;
+            }
+        }
+    }
+
+    public boolean eq(int l1, int r1, int l2, int r2) {
+        if (r1 - l1 != r2 - l2) {
+            return false;
+        } else if (l1 == l2) {
+            return true;
+        }
+        for (int i = 0; i < hashes.length; i++) {
+            /*
+            注意，如果要取模的话：
+            (hashes[i][r1] - hashes[i][l1-1] * basePow[i][r1 - l1 + 1]) % m
+
+            减法那里取模需要改成下面这样，否则负数取模会出错：
+            (hashes[i][r1] - hashes[i][l1-1] * basePow[i][r1 - l1 + 1] + m) % m
+            */
+            long hash1 = hashes[i][r1] - hashes[i][l1-1] * basePow[i][r1 - l1 + 1];
+            long hash2 = hashes[i][r2] - hashes[i][l2-1] * basePow[i][r2 - l2 + 1];
+            if (hash1 != hash2) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+public void findSameRabbit() {
+    Scanner in = new Scanner(System.in);
+    char[] s = in.nextLine().toCharArray();
+    HashStr hash = new HashStr(s, new int[]{31});
+    final int n = in.nextInt();
+    for (int o = 0; o < n; o++) {
+        int l1 = in.nextInt(), r1 = in.nextInt();
+        int l2 = in.nextInt(), r2 = in.nextInt();
+        if (hash.eq(l1, r1, l2, r2)) {
+            System.out.println("Yes");
+        } else {
+            System.out.println("No");
+        }
+    }
+}
+```
+
 
 
 [^1]: https://www.acwing.com/problem/content/139/
+[^2]: https://www.acwing.com/problem/content/140/
