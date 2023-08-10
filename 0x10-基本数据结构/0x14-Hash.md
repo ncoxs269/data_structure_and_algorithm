@@ -365,6 +365,10 @@ ponoiiipoi
 0 1 2 1 0 0 2 1 0 2
 ```
 
+## 拓展练习
+
+1. [LeetCode 214. 最短回文串](https://leetcode-cn.com/problems/shortest-palindrome/)
+
 # 题解
 
 ## 习题 51：雪花
